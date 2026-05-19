@@ -20,21 +20,38 @@ public partial class MantenimientoList : Form
     {
         dataGridView1.AutoGenerateColumns = false;
         dataGridView1.Columns.Clear();
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = "Id", MinimumWidth = 52, FillWeight = 35 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id vehículo", DataPropertyName = "IdVehiculo", MinimumWidth = 96, FillWeight = 70 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tipo", DataPropertyName = "TipoMantenimiento", MinimumWidth = 72, FillWeight = 55 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Costo", DataPropertyName = "Costo", MinimumWidth = 88, FillWeight = 65 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Inicio", DataPropertyName = "FechaInicio", MinimumWidth = 140, FillWeight = 100 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Estado", DataPropertyName = "Estado", MinimumWidth = 72, FillWeight = 55 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = nameof(MantenimientoListaFila.Id), MinimumWidth = 52, FillWeight = 35 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Vehículo", DataPropertyName = nameof(MantenimientoListaFila.Vehiculo), MinimumWidth = 180, FillWeight = 130 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tipo", DataPropertyName = nameof(MantenimientoListaFila.TipoTexto), MinimumWidth = 120, FillWeight = 85 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Costo", DataPropertyName = nameof(MantenimientoListaFila.Costo), MinimumWidth = 88, FillWeight = 65 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Inicio", DataPropertyName = nameof(MantenimientoListaFila.FechaInicio), MinimumWidth = 140, FillWeight = 100 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Estado", DataPropertyName = nameof(MantenimientoListaFila.EstadoTexto), MinimumWidth = 120, FillWeight = 75 });
         ListFormLayout.ConfigureDataGrid(dataGridView1);
         _ = LoadDataAsync();
+    }
+
+    private static MantenimientoListaFila MapearFila(Mantenimiento m)
+    {
+        var vehiculo = m.IdVehiculoNavigation is { } v
+            ? $"{v.Marca} {v.Modelo} ({v.Placa})"
+            : $"Id {m.IdVehiculo}";
+        return new MantenimientoListaFila
+        {
+            Id = m.Id,
+            Vehiculo = vehiculo,
+            TipoTexto = MantenimientoTiposUi.NombreTipo(m.TipoMantenimiento),
+            Costo = m.Costo,
+            FechaInicio = m.FechaInicio,
+            EstadoTexto = MantenimientoEstadosUi.NombreEstado(m.Estado)
+        };
     }
 
     private async Task LoadDataAsync()
     {
         try
         {
-            dataGridView1.DataSource = await _service.GetList(m => true);
+            var list = await _service.GetListConRelacionesAsync(m => true);
+            dataGridView1.DataSource = list.Select(MapearFila).ToList();
         }
         catch (Exception ex)
         {
@@ -48,11 +65,18 @@ public partial class MantenimientoList : Form
             _ = LoadDataAsync();
     }
 
-    private void btnModificar_Click(object sender, EventArgs e)
+    private async void btnModificar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Mantenimiento entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not MantenimientoListaFila fila)
         {
             MessageBox.Show("Seleccione un registro.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var entidad = await _service.Buscar(fila.Id);
+        if (entidad is null)
+        {
+            MessageBox.Show("No se encontró el mantenimiento.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -62,11 +86,11 @@ public partial class MantenimientoList : Form
 
     private void btnEliminar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Mantenimiento entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not MantenimientoListaFila fila)
             return;
         if (MessageBox.Show("¿Eliminar este mantenimiento?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
-        _ = EliminarAsync(entidad.Id);
+        _ = EliminarAsync(fila.Id);
     }
 
     private async Task EliminarAsync(int id)

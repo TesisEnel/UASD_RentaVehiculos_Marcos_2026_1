@@ -13,56 +13,61 @@ namespace RentaVehiculo.UI.Mantenimientos
 
         private void InitializeComponent()
         {
-            numIdVehiculo = new NumericUpDown();
-            numTipo = new NumericUpDown();
+            cboVehiculo = new ComboBox();
+            cboTipo = new ComboBox();
             numCosto = new NumericUpDown();
             dtpInicio = new DateTimePicker();
             dtpFin = new DateTimePicker();
             numKm = new NumericUpDown();
             numProx = new NumericUpDown();
-            numEstado = new NumericUpDown();
-            txtProveedor = new TextBox();
+            cboEstado = new ComboBox();
+            cboProveedor = new ComboBox();
             btnGuardar = new Button();
             btnCancelar = new Button();
             SuspendLayout();
-            numIdVehiculo.Maximum = 1000000;
-            numIdVehiculo.Location = new Point(180, 24);
-            numTipo.Location = new Point(180, 64);
+            cboVehiculo.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboVehiculo.Location = new Point(180, 22);
+            cboVehiculo.Width = 300;
+            cboTipo.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboTipo.Location = new Point(180, 62);
+            cboTipo.Width = 300;
             numCosto.DecimalPlaces = 2;
-            numCosto.Location = new Point(180, 104);
+            numCosto.Location = new Point(180, 102);
             numCosto.Maximum = new decimal(new int[] { 10000000, 0, 0, 0 });
-            dtpInicio.Location = new Point(180, 144);
-            dtpFin.Location = new Point(180, 184);
-            numKm.Location = new Point(180, 224);
+            dtpInicio.Location = new Point(180, 142);
+            dtpFin.Location = new Point(180, 182);
+            numKm.Location = new Point(180, 222);
             numKm.Maximum = 10000000;
-            numProx.Location = new Point(180, 264);
+            numProx.Location = new Point(180, 262);
             numProx.Maximum = 10000000;
-            numEstado.Location = new Point(180, 304);
-            txtProveedor.Location = new Point(180, 344);
-            txtProveedor.Width = 260;
-            btnGuardar.Location = new Point(180, 396);
+            cboEstado.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboEstado.Location = new Point(180, 302);
+            cboEstado.Width = 300;
+            cboProveedor.Location = new Point(180, 342);
+            cboProveedor.Width = 300;
+            btnGuardar.Location = new Point(180, 394);
             btnGuardar.Size = new Size(115, 38);
             btnGuardar.Text = "Guardar";
             btnGuardar.UseVisualStyleBackColor = true;
             btnGuardar.Click += btnGuardar_Click;
             btnCancelar.DialogResult = DialogResult.Cancel;
-            btnCancelar.Location = new Point(305, 396);
+            btnCancelar.Location = new Point(305, 394);
             btnCancelar.Size = new Size(115, 38);
             btnCancelar.Text = "Cancelar";
             btnCancelar.UseVisualStyleBackColor = true;
             Controls.AddRange(new Control[] {
-                new Label { Text = "Id vehículo:", Location = new Point(20, 27), AutoSize = true },
-                new Label { Text = "Tipo:", Location = new Point(20, 67), AutoSize = true },
-                new Label { Text = "Costo:", Location = new Point(20, 107), AutoSize = true },
-                new Label { Text = "Inicio:", Location = new Point(20, 147), AutoSize = true },
-                new Label { Text = "Fin:", Location = new Point(20, 187), AutoSize = true },
-                new Label { Text = "Km mant.:", Location = new Point(20, 227), AutoSize = true },
-                new Label { Text = "Próx. km:", Location = new Point(20, 267), AutoSize = true },
-                new Label { Text = "Estado:", Location = new Point(20, 307), AutoSize = true },
-                new Label { Text = "Proveedor:", Location = new Point(20, 347), AutoSize = true },
-                numIdVehiculo, numTipo, numCosto, dtpInicio, dtpFin, numKm, numProx, numEstado, txtProveedor, btnGuardar, btnCancelar });
+                new Label { Text = "Vehículo:", Location = new Point(20, 25), AutoSize = true },
+                new Label { Text = "Tipo:", Location = new Point(20, 65), AutoSize = true },
+                new Label { Text = "Costo:", Location = new Point(20, 105), AutoSize = true },
+                new Label { Text = "Inicio:", Location = new Point(20, 145), AutoSize = true },
+                new Label { Text = "Fin:", Location = new Point(20, 185), AutoSize = true },
+                new Label { Text = "Km mant.:", Location = new Point(20, 225), AutoSize = true },
+                new Label { Text = "Próx. km:", Location = new Point(20, 265), AutoSize = true },
+                new Label { Text = "Estado:", Location = new Point(20, 305), AutoSize = true },
+                new Label { Text = "Proveedor:", Location = new Point(20, 345), AutoSize = true },
+                cboVehiculo, cboTipo, numCosto, dtpInicio, dtpFin, numKm, numProx, cboEstado, cboProveedor, btnGuardar, btnCancelar });
             AutoScroll = true;
-            ClientSize = new Size(460, 460);
+            ClientSize = new Size(520, 460);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Padding = new Padding(12);
             StartPosition = FormStartPosition.CenterParent;
@@ -70,15 +75,15 @@ namespace RentaVehiculo.UI.Mantenimientos
             ResumeLayout(false);
         }
 
-        private NumericUpDown numIdVehiculo;
-        private NumericUpDown numTipo;
+        private ComboBox cboVehiculo;
+        private ComboBox cboTipo;
         private NumericUpDown numCosto;
         private DateTimePicker dtpInicio;
         private DateTimePicker dtpFin;
         private NumericUpDown numKm;
         private NumericUpDown numProx;
-        private NumericUpDown numEstado;
-        private TextBox txtProveedor;
+        private ComboBox cboEstado;
+        private ComboBox cboProveedor;
         private Button btnGuardar;
         private Button btnCancelar;
     }

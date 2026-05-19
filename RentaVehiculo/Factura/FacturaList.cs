@@ -20,23 +20,57 @@ public partial class FacturaList : Form
     {
         dataGridView1.AutoGenerateColumns = false;
         dataGridView1.Columns.Clear();
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = "Id", MinimumWidth = 52, FillWeight = 35 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id renta", DataPropertyName = "IdRenta", MinimumWidth = 80, FillWeight = 55 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Número", DataPropertyName = "NumeroFactura", MinimumWidth = 120, FillWeight = 95 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Fecha", DataPropertyName = "FechaEmision", MinimumWidth = 130, FillWeight = 90 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Subtotal", DataPropertyName = "Subtotal", MinimumWidth = 88, FillWeight = 65 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Impuestos", DataPropertyName = "Impuestos", MinimumWidth = 88, FillWeight = 65 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total", DataPropertyName = "Total", MinimumWidth = 88, FillWeight = 65 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Estado", DataPropertyName = "Estado", MinimumWidth = 72, FillWeight = 50 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = nameof(FacturaListaFila.Id), MinimumWidth = 52, FillWeight = 35 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Renta", DataPropertyName = nameof(FacturaListaFila.Renta), MinimumWidth = 280, FillWeight = 160 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Número", DataPropertyName = nameof(FacturaListaFila.NumeroFactura), MinimumWidth = 120, FillWeight = 95 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Fecha", DataPropertyName = nameof(FacturaListaFila.FechaEmision), MinimumWidth = 130, FillWeight = 90 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Subtotal", DataPropertyName = nameof(FacturaListaFila.Subtotal), MinimumWidth = 88, FillWeight = 65 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Impuestos", DataPropertyName = nameof(FacturaListaFila.Impuestos), MinimumWidth = 88, FillWeight = 65 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Total", DataPropertyName = nameof(FacturaListaFila.Total), MinimumWidth = 88, FillWeight = 65 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Estado", DataPropertyName = nameof(FacturaListaFila.EstadoTexto), MinimumWidth = 100, FillWeight = 70 });
         ListFormLayout.ConfigureDataGrid(dataGridView1);
         _ = LoadDataAsync();
+    }
+
+    private static FacturaListaFila MapearFila(Factura f)
+    {
+        return new FacturaListaFila
+        {
+            Id = f.Id,
+            Renta = TextoRenta(f),
+            NumeroFactura = f.NumeroFactura,
+            FechaEmision = f.FechaEmision,
+            Subtotal = f.Subtotal,
+            Impuestos = f.Impuestos,
+            Total = f.Total,
+            EstadoTexto = FacturaEstadosUi.NombreEstado(f.Estado)
+        };
+    }
+
+    private static string TextoRenta(Factura f)
+    {
+        if (f.IdRentaNavigation is not { } r)
+            return $"Renta #{f.IdRenta}";
+
+        var cliente = r.IdClienteNavigation is { } c
+            ? $"{c.Nombre} {c.Apellido}".Trim()
+            : $"Cliente #{r.IdCliente}";
+        if (string.IsNullOrWhiteSpace(cliente))
+            cliente = $"Cliente #{r.IdCliente}";
+
+        var vehiculo = r.IdVehiculoNavigation is { } v
+            ? $"{v.Marca} {v.Modelo} ({v.Placa})"
+            : $"Vehículo #{r.IdVehiculo}";
+
+        return $"Renta #{r.Id} — {cliente} — {vehiculo}";
     }
 
     private async Task LoadDataAsync()
     {
         try
         {
-            dataGridView1.DataSource = await _service.GetList(f => true);
+            var list = await _service.GetListConRelacionesAsync(f => true);
+            dataGridView1.DataSource = list.Select(MapearFila).ToList();
         }
         catch (Exception ex)
         {
@@ -50,11 +84,18 @@ public partial class FacturaList : Form
             _ = LoadDataAsync();
     }
 
-    private void btnModificar_Click(object sender, EventArgs e)
+    private async void btnModificar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Factura entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not FacturaListaFila fila)
         {
             MessageBox.Show("Seleccione una factura.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var entidad = await _service.Buscar(fila.Id);
+        if (entidad is null)
+        {
+            MessageBox.Show("No se encontró la factura.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -64,11 +105,11 @@ public partial class FacturaList : Form
 
     private void btnEliminar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Factura entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not FacturaListaFila fila)
             return;
         if (MessageBox.Show("¿Eliminar esta factura?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
-        _ = EliminarAsync(entidad.Id);
+        _ = EliminarAsync(fila.Id);
     }
 
     private async Task EliminarAsync(int id)

@@ -1,4 +1,5 @@
 ﻿using RentaVehiculo.Data.Models;
+using RentaVehiculo.UI.Infrastructure;
 using RentaVehiculo.UI.Services;
 
 namespace RentaVehiculo.UI.Usuarios;
@@ -6,15 +7,22 @@ namespace RentaVehiculo.UI.Usuarios;
 public partial class UsuarioForm : Form
 {
     private readonly UsuarioService _service;
+    private readonly SeleccionCatalogoService _catalogos;
     private Usuario? _entidad;
 
-    public UsuarioForm(UsuarioService service) : this(service, null) { }
+    public UsuarioForm(UsuarioService service, SeleccionCatalogoService catalogos) : this(service, catalogos, null)
+    {
+    }
 
-    public UsuarioForm(UsuarioService service, Usuario? entidad)
+    public UsuarioForm(UsuarioService service, SeleccionCatalogoService catalogos, Usuario? entidad)
     {
         InitializeComponent();
         _service = service;
+        _catalogos = catalogos;
         _entidad = entidad;
+
+        UsuarioRolesUi.EnlazarRoles(cboRol, _entidad?.Rol);
+
         if (_entidad != null)
         {
             txtNombre.Text = _entidad.Nombre;
@@ -23,15 +31,30 @@ public partial class UsuarioForm : Form
             txtEmail.Text = _entidad.Email;
             txtPassword.Text = "";
             txtPassword.PlaceholderText = "(sin cambiar)";
-            txtRol.Text = _entidad.Rol;
-            numSucursal.Value = _entidad.IdSucursal ?? 0;
             chkActivo.Checked = _entidad.Activo;
         }
         else
         {
             txtPassword.PlaceholderText = "obligatoria en alta";
             chkActivo.Checked = true;
-            txtRol.Text = "Empleado";
+        }
+
+        Load += UsuarioForm_Load;
+    }
+
+    private async void UsuarioForm_Load(object? sender, EventArgs e)
+    {
+        Load -= UsuarioForm_Load;
+        try
+        {
+            var sucursales = await _catalogos.ObtenerSucursalesActivasAsync();
+            var items = new List<ItemListaId> { new() { Id = 0, Nombre = "(Ninguna)" } };
+            items.AddRange(sucursales);
+            ComboSeleccion.Enlazar(cboSucursal, items, _entidad?.IdSucursal ?? 0);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"No se pudieron cargar las sucursales: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -52,9 +75,10 @@ public partial class UsuarioForm : Form
             _entidad.PasswordHash = txtPassword.Text.Trim();
         else if (_entidad.Id == 0)
             _entidad.PasswordHash = "cambiar123";
-        _entidad.Rol = string.IsNullOrWhiteSpace(txtRol.Text) ? "Empleado" : txtRol.Text.Trim();
+        _entidad.Rol = UsuarioRolesUi.RolSeleccionado(cboRol);
         _entidad.Activo = chkActivo.Checked;
-        _entidad.IdSucursal = numSucursal.Value == 0 ? null : (int)numSucursal.Value;
+        var idSuc = ComboSeleccion.IdSeleccionado(cboSucursal);
+        _entidad.IdSucursal = idSuc == 0 ? null : idSuc;
 
         try
         {

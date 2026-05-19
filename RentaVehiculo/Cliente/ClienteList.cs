@@ -20,22 +20,34 @@ public partial class ClienteList : Form
     {
         dataGridView1.AutoGenerateColumns = false;
         dataGridView1.Columns.Clear();
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = "Id", MinimumWidth = 52, FillWeight = 35 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Nombre", DataPropertyName = "Nombre", MinimumWidth = 100, FillWeight = 85 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Apellido", DataPropertyName = "Apellido", MinimumWidth = 100, FillWeight = 85 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Email", DataPropertyName = "Email", MinimumWidth = 160, FillWeight = 120 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Teléfono", DataPropertyName = "Telefono", MinimumWidth = 100, FillWeight = 75 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Licencia", DataPropertyName = "Licencia", MinimumWidth = 100, FillWeight = 75 });
-        dataGridView1.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Activo", DataPropertyName = "Activo", MinimumWidth = 72, FillWeight = 50 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = nameof(ClienteListaFila.Id), MinimumWidth = 52, FillWeight = 35 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Nombre", DataPropertyName = nameof(ClienteListaFila.Nombre), MinimumWidth = 100, FillWeight = 85 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Apellido", DataPropertyName = nameof(ClienteListaFila.Apellido), MinimumWidth = 100, FillWeight = 85 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Email", DataPropertyName = nameof(ClienteListaFila.Email), MinimumWidth = 160, FillWeight = 120 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Teléfono", DataPropertyName = nameof(ClienteListaFila.Telefono), MinimumWidth = 100, FillWeight = 75 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Licencia", DataPropertyName = nameof(ClienteListaFila.Licencia), MinimumWidth = 100, FillWeight = 75 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Activo", DataPropertyName = nameof(ClienteListaFila.ActivoTexto), MinimumWidth = 80, FillWeight = 55 });
         ListFormLayout.ConfigureDataGrid(dataGridView1);
         _ = LoadDataAsync();
     }
+
+    private static ClienteListaFila MapearFila(Cliente c) => new()
+    {
+        Id = c.Id,
+        Nombre = c.Nombre,
+        Apellido = c.Apellido,
+        Email = c.Email,
+        Telefono = c.Telefono,
+        Licencia = c.Licencia,
+        ActivoTexto = c.Activo ? "Sí" : "No"
+    };
 
     private async Task LoadDataAsync()
     {
         try
         {
-            dataGridView1.DataSource = await _service.GetList(c => true);
+            var list = await _service.GetList(c => true);
+            dataGridView1.DataSource = list.Select(MapearFila).ToList();
         }
         catch (Exception ex)
         {
@@ -49,11 +61,18 @@ public partial class ClienteList : Form
             _ = LoadDataAsync();
     }
 
-    private void btnModificar_Click(object sender, EventArgs e)
+    private async void btnModificar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Cliente entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not ClienteListaFila fila)
         {
             MessageBox.Show("Seleccione un cliente.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var entidad = await _service.Buscar(fila.Id);
+        if (entidad is null)
+        {
+            MessageBox.Show("No se encontró el cliente.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -63,12 +82,12 @@ public partial class ClienteList : Form
 
     private void btnEliminar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Cliente entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not ClienteListaFila fila)
             return;
-        if (MessageBox.Show($"¿Eliminar cliente {entidad.Nombre} {entidad.Apellido}?", "Confirmar",
+        if (MessageBox.Show($"¿Eliminar cliente {fila.Nombre} {fila.Apellido}?", "Confirmar",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
-        _ = EliminarAsync(entidad.Id);
+        _ = EliminarAsync(fila.Id);
     }
 
     private async Task EliminarAsync(int id)

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RentaVehiculo.Data.Context;
 using RentaVehiculo.UI.Clientes;
 using RentaVehiculo.UI.Facturas;
+using RentaVehiculo.UI.Login;
 using RentaVehiculo.UI.Mantenimientos;
 using RentaVehiculo.UI.Rentas;
 using RentaVehiculo.UI.Reservas;
@@ -24,7 +25,20 @@ static class Program
         var services = new ServiceCollection();
         ConfigureServices(services);
         ServiceProvider = services.BuildServiceProvider();
-        Application.Run(ServiceProvider.GetRequiredService<MainForm>());
+
+        while (true)
+        {
+            using (var login = ServiceProvider.GetRequiredService<LoginForm>())
+            {
+                if (login.ShowDialog() != DialogResult.OK)
+                    return;
+            }
+
+            var main = ServiceProvider.GetRequiredService<MainForm>();
+            Application.Run(main);
+            if (!main.RequiereNuevoLogin)
+                return;
+        }
     }
 
     private static void ConfigureServices(ServiceCollection services)
@@ -41,6 +55,7 @@ static class Program
             ServiceLifetime.Transient,
             ServiceLifetime.Transient);
 
+        services.AddTransient<LoginForm>();
         services.AddTransient<MainForm>();
 
         services.AddTransient<VehiculoList>();
@@ -66,5 +81,6 @@ static class Program
         services.AddTransient<FacturaService>();
         services.AddTransient<UsuarioService>();
         services.AddTransient<DashboardService>();
+        services.AddTransient<SeleccionCatalogoService>();
     }
 }

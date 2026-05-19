@@ -23,6 +23,15 @@ public class ReservaService(RentaVehiculosContext context) : IService<Reserva, i
     public async Task<List<Reserva>> GetList(Expression<Func<Reserva, bool>> criterio) =>
         await context.Reservas.AsNoTracking().Where(criterio).ToListAsync();
 
+    /// <summary>Incluye cliente y vehículo para mostrar nombres en listados.</summary>
+    public async Task<List<Reserva>> GetListConRelacionesAsync(Expression<Func<Reserva, bool>> criterio, CancellationToken ct = default) =>
+        await context.Reservas.AsNoTracking()
+            .Include(r => r.IdClienteNavigation)
+            .Include(r => r.IdVehiculoNavigation)
+            .Where(criterio)
+            .OrderByDescending(r => r.Id)
+            .ToListAsync(ct);
+
     public async Task<bool> Insertar(Reserva entity)
     {
         if (entity.FechaReserva == default)

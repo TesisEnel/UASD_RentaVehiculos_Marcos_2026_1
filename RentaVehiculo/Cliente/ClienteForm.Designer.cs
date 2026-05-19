@@ -20,7 +20,7 @@ namespace RentaVehiculo.UI.Clientes
             txtLicencia = new TextBox();
             dtpVencLic = new DateTimePicker();
             dtpNac = new DateTimePicker();
-            numTipoCliente = new NumericUpDown();
+            cboTipoCliente = new ComboBox();
             chkActivo = new CheckBox();
             btnGuardar = new Button();
             btnCancelar = new Button();
@@ -37,8 +37,9 @@ namespace RentaVehiculo.UI.Clientes
             txtLicencia.Size = new Size(200, 23);
             dtpVencLic.Location = new Point(180, 224);
             dtpNac.Location = new Point(180, 264);
-            numTipoCliente.Location = new Point(180, 304);
-            numTipoCliente.Maximum = 10;
+            cboTipoCliente.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboTipoCliente.Location = new Point(180, 302);
+            cboTipoCliente.Size = new Size(280, 23);
             chkActivo.Location = new Point(180, 344);
             chkActivo.Text = "Activo";
             chkActivo.AutoSize = true;
@@ -60,7 +61,7 @@ namespace RentaVehiculo.UI.Clientes
                 new Label { Text = "Venc. licencia:", Location = new Point(20, 227), AutoSize = true },
                 new Label { Text = "Nacimiento:", Location = new Point(20, 267), AutoSize = true },
                 new Label { Text = "Tipo cliente:", Location = new Point(20, 307), AutoSize = true },
-                txtNombre, txtApellido, txtEmail, txtTelefono, txtLicencia, dtpVencLic, dtpNac, numTipoCliente, chkActivo, btnGuardar, btnCancelar });
+                txtNombre, txtApellido, txtEmail, txtTelefono, txtLicencia, dtpVencLic, dtpNac, cboTipoCliente, chkActivo, btnGuardar, btnCancelar });
             AutoScroll = true;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             ClientSize = new Size(500, 460);
@@ -77,7 +78,7 @@ namespace RentaVehiculo.UI.Clientes
         private TextBox txtLicencia;
         private DateTimePicker dtpVencLic;
         private DateTimePicker dtpNac;
-        private NumericUpDown numTipoCliente;
+        private ComboBox cboTipoCliente;
         private CheckBox chkActivo;
         private Button btnGuardar;
         private Button btnCancelar;

@@ -18,24 +18,44 @@ public partial class UsuarioList : Form
 
     private void UsuarioList_Load(object sender, EventArgs e)
     {
+        if (!SesionActual.EsAdministrador)
+        {
+            MessageBox.Show("Solo un administrador puede gestionar usuarios.", "Acceso denegado",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            Close();
+            return;
+        }
+
         dataGridView1.AutoGenerateColumns = false;
         dataGridView1.Columns.Clear();
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = "Id", MinimumWidth = 52, FillWeight = 35 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Nombre", DataPropertyName = "Nombre", MinimumWidth = 100, FillWeight = 85 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Apellido", DataPropertyName = "Apellido", MinimumWidth = 100, FillWeight = 85 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Usuario", DataPropertyName = "NombreUsuario", MinimumWidth = 100, FillWeight = 85 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Email", DataPropertyName = "Email", MinimumWidth = 160, FillWeight = 120 });
-        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Rol", DataPropertyName = "Rol", MinimumWidth = 88, FillWeight = 65 });
-        dataGridView1.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = "Activo", DataPropertyName = "Activo", MinimumWidth = 72, FillWeight = 50 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Id", DataPropertyName = nameof(UsuarioListaFila.Id), MinimumWidth = 52, FillWeight = 35 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Nombre", DataPropertyName = nameof(UsuarioListaFila.Nombre), MinimumWidth = 100, FillWeight = 85 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Apellido", DataPropertyName = nameof(UsuarioListaFila.Apellido), MinimumWidth = 100, FillWeight = 85 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Usuario", DataPropertyName = nameof(UsuarioListaFila.NombreUsuario), MinimumWidth = 100, FillWeight = 85 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Email", DataPropertyName = nameof(UsuarioListaFila.Email), MinimumWidth = 160, FillWeight = 120 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Rol", DataPropertyName = nameof(UsuarioListaFila.RolTexto), MinimumWidth = 110, FillWeight = 75 });
+        dataGridView1.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Activo", DataPropertyName = nameof(UsuarioListaFila.ActivoTexto), MinimumWidth = 72, FillWeight = 50 });
         ListFormLayout.ConfigureDataGrid(dataGridView1);
         _ = LoadDataAsync();
     }
+
+    private static UsuarioListaFila MapearFila(Usuario u) => new()
+    {
+        Id = u.Id,
+        Nombre = u.Nombre,
+        Apellido = u.Apellido,
+        NombreUsuario = u.NombreUsuario,
+        Email = u.Email,
+        RolTexto = UsuarioRoles.Normalizar(u.Rol),
+        ActivoTexto = u.Activo ? "Sí" : "No"
+    };
 
     private async Task LoadDataAsync()
     {
         try
         {
-            dataGridView1.DataSource = await _service.GetList(u => true);
+            var list = await _service.GetList(u => true);
+            dataGridView1.DataSource = list.Select(MapearFila).ToList();
         }
         catch (Exception ex)
         {
@@ -49,11 +69,18 @@ public partial class UsuarioList : Form
             _ = LoadDataAsync();
     }
 
-    private void btnModificar_Click(object sender, EventArgs e)
+    private async void btnModificar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Usuario entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not UsuarioListaFila fila)
         {
             MessageBox.Show("Seleccione un usuario.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var entidad = await _service.Buscar(fila.Id);
+        if (entidad is null)
+        {
+            MessageBox.Show("No se encontró el usuario.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -63,11 +90,11 @@ public partial class UsuarioList : Form
 
     private void btnEliminar_Click(object sender, EventArgs e)
     {
-        if (dataGridView1.CurrentRow?.DataBoundItem is not Usuario entidad)
+        if (dataGridView1.CurrentRow?.DataBoundItem is not UsuarioListaFila fila)
             return;
-        if (MessageBox.Show($"¿Eliminar usuario {entidad.NombreUsuario}?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+        if (MessageBox.Show($"¿Eliminar usuario {fila.NombreUsuario}?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
-        _ = EliminarAsync(entidad.Id);
+        _ = EliminarAsync(fila.Id);
     }
 
     private async Task EliminarAsync(int id)

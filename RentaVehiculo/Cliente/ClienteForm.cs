@@ -1,4 +1,5 @@
 using RentaVehiculo.Data.Models;
+using RentaVehiculo.UI.Infrastructure;
 using RentaVehiculo.UI.Services;
 
 namespace RentaVehiculo.UI.Clientes;
@@ -8,13 +9,19 @@ public partial class ClienteForm : Form
     private readonly ClienteService _service;
     private Cliente? _entidad;
 
-    public ClienteForm(ClienteService service) : this(service, null) { }
+    public ClienteForm(ClienteService service) : this(service, null)
+    {
+    }
 
     public ClienteForm(ClienteService service, Cliente? entidad)
     {
         InitializeComponent();
         _service = service;
         _entidad = entidad;
+
+        var tipos = ClienteTiposUi.ListaParaSeleccion(_entidad?.TipoCliente);
+        ComboSeleccion.Enlazar(cboTipoCliente, tipos, _entidad?.TipoCliente > 0 ? _entidad.TipoCliente : null);
+
         if (_entidad != null)
         {
             txtNombre.Text = _entidad.Nombre;
@@ -24,7 +31,6 @@ public partial class ClienteForm : Form
             txtLicencia.Text = _entidad.Licencia;
             dtpVencLic.Value = _entidad.FechaVencimientoLicencia;
             dtpNac.Value = _entidad.FechaNacimiento;
-            numTipoCliente.Value = _entidad.TipoCliente;
             chkActivo.Checked = _entidad.Activo;
         }
         else
@@ -39,6 +45,13 @@ public partial class ClienteForm : Form
             return;
         }
 
+        var tipoCliente = ComboSeleccion.IdSeleccionado(cboTipoCliente);
+        if (tipoCliente <= 0)
+        {
+            MessageBox.Show("Seleccione el tipo de cliente.", "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
         _entidad ??= new Cliente();
         _entidad.Nombre = txtNombre.Text.Trim();
         _entidad.Apellido = txtApellido.Text.Trim();
@@ -47,7 +60,7 @@ public partial class ClienteForm : Form
         _entidad.Licencia = string.IsNullOrWhiteSpace(txtLicencia.Text) ? "PED-" + Guid.NewGuid().ToString("N")[..8] : txtLicencia.Text.Trim();
         _entidad.FechaVencimientoLicencia = dtpVencLic.Value.Date;
         _entidad.FechaNacimiento = dtpNac.Value.Date;
-        _entidad.TipoCliente = (int)numTipoCliente.Value;
+        _entidad.TipoCliente = tipoCliente;
         _entidad.Activo = chkActivo.Checked;
 
         try

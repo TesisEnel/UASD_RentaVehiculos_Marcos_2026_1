@@ -13,48 +13,54 @@ namespace RentaVehiculo.UI.Reservas
 
         private void InitializeComponent()
         {
-            numIdCliente = new NumericUpDown();
-            numIdVehiculo = new NumericUpDown();
+            cboCliente = new ComboBox();
+            cboVehiculo = new ComboBox();
             dtpInicio = new DateTimePicker();
             dtpFin = new DateTimePicker();
             numMonto = new NumericUpDown();
-            numEstado = new NumericUpDown();
+            cboEstado = new ComboBox();
             chkDepPagado = new CheckBox();
             btnGuardar = new Button();
             btnCancelar = new Button();
             SuspendLayout();
-            numIdCliente.Location = new Point(200, 24);
-            numIdCliente.Maximum = 1000000;
-            numIdVehiculo.Location = new Point(200, 64);
-            numIdVehiculo.Maximum = 1000000;
-            dtpInicio.Location = new Point(200, 104);
-            dtpFin.Location = new Point(200, 144);
+            cboCliente.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboCliente.Location = new Point(200, 22);
+            cboCliente.Width = 300;
+            cboCliente.TabIndex = 0;
+            cboVehiculo.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboVehiculo.Location = new Point(200, 62);
+            cboVehiculo.Width = 300;
+            cboVehiculo.TabIndex = 1;
+            dtpInicio.Location = new Point(200, 102);
+            dtpFin.Location = new Point(200, 142);
             numMonto.DecimalPlaces = 2;
-            numMonto.Location = new Point(200, 184);
+            numMonto.Location = new Point(200, 182);
             numMonto.Maximum = new decimal(new int[] { 10000000, 0, 0, 0 });
-            numEstado.Location = new Point(200, 224);
-            chkDepPagado.Location = new Point(200, 264);
+            cboEstado.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboEstado.Location = new Point(200, 222);
+            cboEstado.Width = 300;
+            chkDepPagado.Location = new Point(200, 262);
             chkDepPagado.Text = "Depósito pagado";
-            btnGuardar.Location = new Point(200, 316);
+            btnGuardar.Location = new Point(200, 314);
             btnGuardar.Size = new Size(115, 38);
             btnGuardar.Text = "Guardar";
             btnGuardar.UseVisualStyleBackColor = true;
             btnGuardar.Click += btnGuardar_Click;
             btnCancelar.DialogResult = DialogResult.Cancel;
-            btnCancelar.Location = new Point(325, 316);
+            btnCancelar.Location = new Point(325, 314);
             btnCancelar.Size = new Size(115, 38);
             btnCancelar.Text = "Cancelar";
             btnCancelar.UseVisualStyleBackColor = true;
             Controls.AddRange(new Control[] {
-                new Label { Text = "Id cliente:", Location = new Point(20, 27), AutoSize = true },
-                new Label { Text = "Id vehículo:", Location = new Point(20, 67), AutoSize = true },
-                new Label { Text = "Inicio reserva:", Location = new Point(20, 107), AutoSize = true },
-                new Label { Text = "Fin reserva:", Location = new Point(20, 147), AutoSize = true },
-                new Label { Text = "Monto depósito:", Location = new Point(20, 187), AutoSize = true },
-                new Label { Text = "Estado:", Location = new Point(20, 227), AutoSize = true },
-                numIdCliente, numIdVehiculo, dtpInicio, dtpFin, numMonto, numEstado, chkDepPagado, btnGuardar, btnCancelar });
+                new Label { Text = "Cliente:", Location = new Point(20, 25), AutoSize = true },
+                new Label { Text = "Vehículo:", Location = new Point(20, 65), AutoSize = true },
+                new Label { Text = "Inicio reserva:", Location = new Point(20, 105), AutoSize = true },
+                new Label { Text = "Fin reserva:", Location = new Point(20, 145), AutoSize = true },
+                new Label { Text = "Monto depósito:", Location = new Point(20, 185), AutoSize = true },
+                new Label { Text = "Estado:", Location = new Point(20, 225), AutoSize = true },
+                cboCliente, cboVehiculo, dtpInicio, dtpFin, numMonto, cboEstado, chkDepPagado, btnGuardar, btnCancelar });
             AutoScroll = true;
-            ClientSize = new Size(500, 380);
+            ClientSize = new Size(540, 390);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Padding = new Padding(12);
             StartPosition = FormStartPosition.CenterParent;
@@ -62,12 +68,12 @@ namespace RentaVehiculo.UI.Reservas
             ResumeLayout(false);
         }
 
-        private NumericUpDown numIdCliente;
-        private NumericUpDown numIdVehiculo;
+        private ComboBox cboCliente;
+        private ComboBox cboVehiculo;
         private DateTimePicker dtpInicio;
         private DateTimePicker dtpFin;
         private NumericUpDown numMonto;
-        private NumericUpDown numEstado;
+        private ComboBox cboEstado;
         private CheckBox chkDepPagado;
         private Button btnGuardar;
         private Button btnCancelar;
