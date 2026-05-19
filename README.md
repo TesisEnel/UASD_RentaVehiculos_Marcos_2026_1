@@ -1,4 +1,5 @@
 # Sistema de Renta de Vehículos
+<img width="2044" height="1103" alt="{3F3D38BC-682E-4299-A987-0ECC5AC45EBE}" src="https://github.com/user-attachments/assets/a4b46a7f-375b-4882-ba6f-f6eb1e3cee2e" />
 
 ## 1. Descripción general del proyecto
 
