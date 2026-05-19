@@ -58,4 +58,42 @@ public class UsuarioService(RentaVehiculosContext context) : IService<UsuarioEnt
         context.Usuarios.Update(usuario);
         return await context.SaveChangesAsync() > 0;
     }
+
+    /// <summary>Valida credenciales. La contraseña se guarda en texto plano (coherente con el formulario de usuarios).</summary>
+    public async Task<UsuarioEntity?> ValidarInicioSesionAsync(string nombreUsuario, string password)
+    {
+        if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(password))
+            return null;
+
+        var clave = nombreUsuario.Trim();
+        var pass = password.Trim();
+
+        var candidatos = await context.Usuarios.AsNoTracking()
+            .Where(u => u.Activo)
+            .ToListAsync();
+
+        var usuario = candidatos.FirstOrDefault(u =>
+            string.Equals(u.NombreUsuario, clave, StringComparison.OrdinalIgnoreCase));
+
+        if (usuario is null)
+            return null;
+
+        if (!CoincideContrasena(usuario.PasswordHash, pass))
+            return null;
+
+        return usuario;
+    }
+
+    private static bool CoincideContrasena(string almacenada, string ingresada)
+    {
+        if (string.Equals(almacenada, ingresada, StringComparison.Ordinal))
+            return true;
+
+        // Compatibilidad con registros demo antiguos en BD
+        if (string.Equals(almacenada, "$2a$11$DEMO_HASH_NO_USAR_EN_PRODUCCION", StringComparison.Ordinal)
+            && string.Equals(ingresada, "cambiar123", StringComparison.Ordinal))
+            return true;
+
+        return false;
+    }
 }

@@ -1,4 +1,5 @@
 using RentaVehiculo.Data.Models;
+using RentaVehiculo.UI.Infrastructure;
 using RentaVehiculo.UI.Services;
 
 namespace RentaVehiculo.UI.Facturas;
@@ -6,18 +7,21 @@ namespace RentaVehiculo.UI.Facturas;
 public partial class FacturaForm : Form
 {
     private readonly FacturaService _service;
+    private readonly SeleccionCatalogoService _catalogos;
     private Factura? _entidad;
 
-    public FacturaForm(FacturaService service) : this(service, null) { }
+    public FacturaForm(FacturaService service, SeleccionCatalogoService catalogos) : this(service, catalogos, null)
+    {
+    }
 
-    public FacturaForm(FacturaService service, Factura? entidad)
+    public FacturaForm(FacturaService service, SeleccionCatalogoService catalogos, Factura? entidad)
     {
         InitializeComponent();
         _service = service;
+        _catalogos = catalogos;
         _entidad = entidad;
         if (_entidad != null)
         {
-            numIdRenta.Value = _entidad.IdRenta;
             txtNumero.Text = _entidad.NumeroFactura;
             numSub.Value = _entidad.Subtotal;
             numImp.Value = _entidad.Impuestos;
@@ -34,6 +38,22 @@ public partial class FacturaForm : Form
             numMetodo.Value = 1;
             numEstado.Value = 1;
         }
+
+        Load += FacturaForm_Load;
+    }
+
+    private async void FacturaForm_Load(object? sender, EventArgs e)
+    {
+        Load -= FacturaForm_Load;
+        try
+        {
+            var rentas = await _catalogos.ObtenerRentasResumenAsync();
+            ComboSeleccion.Enlazar(cboRenta, rentas, _entidad?.IdRenta);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"No se pudieron cargar las rentas: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private async void btnGuardar_Click(object sender, EventArgs e)
@@ -44,8 +64,15 @@ public partial class FacturaForm : Form
             return;
         }
 
+        var idRenta = ComboSeleccion.IdSeleccionado(cboRenta);
+        if (idRenta <= 0)
+        {
+            MessageBox.Show("Seleccione la renta asociada.", "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
         _entidad ??= new Factura();
-        _entidad.IdRenta = (int)numIdRenta.Value;
+        _entidad.IdRenta = idRenta;
         _entidad.NumeroFactura = txtNumero.Text.Trim();
         _entidad.Subtotal = numSub.Value;
         _entidad.Impuestos = numImp.Value;

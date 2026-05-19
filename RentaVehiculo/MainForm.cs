@@ -3,16 +3,21 @@ using Guna.UI2.WinForms;
 using Microsoft.Extensions.DependencyInjection;
 using RentaVehiculo.UI.Clientes;
 using RentaVehiculo.UI.Facturas;
+using RentaVehiculo.UI.Infrastructure;
 using RentaVehiculo.UI.Mantenimientos;
 using RentaVehiculo.UI.Rentas;
 using RentaVehiculo.UI.Reservas;
 using RentaVehiculo.UI.Services;
+using RentaVehiculo.UI.Usuarios;
 using RentaVehiculo.UI.Vehiculos;
 
 namespace RentaVehiculo
 {
     public partial class MainForm : Form
     {
+        /// <summary>Índice del botón de navegación que muestra el panel principal (dashboard).</summary>
+        private const int NavDashboard = -1;
+
         private readonly Color _sidebarBg = Color.FromArgb(15, 23, 42);
         private readonly Color _mainBg = Color.FromArgb(248, 250, 252);
         private readonly Color _accentBlue = Color.FromArgb(37, 99, 235);
@@ -24,6 +29,8 @@ namespace RentaVehiculo
         private Guna2Panel _pnlSidebar = null!;
         private Guna2Panel _pnlMain = null!;
         private readonly List<Guna2Button> _navButtons = new();
+        private bool _abriendoModulo;
+        private bool _navClickEnCurso;
 
         private Label? _kpiVehVal;
         private Label? _kpiVehSub;
@@ -32,6 +39,23 @@ namespace RentaVehiculo
         private Label? _kpiMantVal;
         private Label? _kpiMantSub;
         private FlowLayoutPanel? _flpAlerts;
+        private Label? _lblProfileUser;
+        private Label? _lblProfileMail;
+        private Label? _lblProfileAvatar;
+
+        /// <summary>True cuando el usuario cerró sesión y debe volver al login.</summary>
+        public bool RequiereNuevoLogin { get; private set; }
+
+        private static readonly (ModuloApp Modulo, int IconCode, string Label)[] DefinicionModulos =
+        [
+            (ModuloApp.Vehiculos, 0xE804, "Gestión de Flota"),
+            (ModuloApp.Clientes, 0xE716, "Clientes"),
+            (ModuloApp.Reservas, 0xE787, "Reservas"),
+            (ModuloApp.Rentas, 0xE8F1, "Rentas Activas"),
+            (ModuloApp.Mantenimiento, 0xE713, "Mantenimiento"),
+            (ModuloApp.Facturacion, 0xE8A5, "Facturación"),
+            (ModuloApp.Usuarios, 0xE77B, "Usuarios")
+        ];
 
         /// <summary>Constructor sin parámetros para el diseñador de Visual Studio.</summary>
         public MainForm()
@@ -111,31 +135,30 @@ namespace RentaVehiculo
                 BackColor = Color.Transparent
             };
 
-            (int iconCode, string label)[] navItems =
-            {
-                (0xE804, "Gestión de Flota"),
-                (0xE716, "Clientes"),
-                (0xE787, "Reservas"),
-                (0xE8F1, "Rentas Activas"),
-                (0xE713, "Mantenimiento"),
-                (0xE8A5, "Facturación")
-            };
+            var btnInicio = CreateNavButton("Inicio", 0xE80F, NavDashboard);
+            btnInicio.Margin = new Padding(0, 0, 0, 8);
+            btnInicio.Height = 52;
+            pnlNavHost.Controls.Add(btnInicio);
+            _navButtons.Add(btnInicio);
 
-            for (var i = 0; i < navItems.Length; i++)
+            var modulosPermitidos = UsuarioRoles.ModulosPermitidos(SesionActual.Usuario?.Rol);
+            foreach (var def in DefinicionModulos)
             {
-                var btn = CreateNavButton(navItems[i].label, navItems[i].iconCode, i);
+                if (!modulosPermitidos.Contains(def.Modulo))
+                    continue;
+                var btn = CreateNavButton(def.Label, def.IconCode, (int)def.Modulo);
                 btn.Margin = new Padding(0, 0, 0, 8);
                 btn.Height = 52;
                 pnlNavHost.Controls.Add(btn);
                 _navButtons.Add(btn);
             }
 
-            SetSelectedNav(0);
+            SetSelectedNav(NavDashboard);
 
             var pnlProfile = new Guna2Panel
             {
                 Dock = DockStyle.Fill,
-                MinimumSize = new Size(0, 72),
+                MinimumSize = new Size(0, 108),
                 FillColor = Color.FromArgb(30, 41, 59),
                 BorderRadius = 12,
                 Margin = new Padding(0, 12, 0, 0)
@@ -148,9 +171,11 @@ namespace RentaVehiculo
                 FillColor = _accentBlue,
                 BorderRadius = 20
             };
-            var lblAv = new Label
+            var u = SesionActual.Usuario!;
+            var iniciales = ObtenerIniciales(u.Nombre, u.Apellido);
+            _lblProfileAvatar = new Label
             {
-                Text = "AD",
+                Text = iniciales,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = false,
@@ -158,28 +183,54 @@ namespace RentaVehiculo
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent
             };
-            avatar.Controls.Add(lblAv);
+            avatar.Controls.Add(_lblProfileAvatar);
 
-            var lblUser = new Label
+            _lblProfileUser = new Label
             {
-                Text = "Admin",
+                Text = $"{u.Nombre} {u.Apellido}".Trim(),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(60, 14),
                 AutoSize = true
             };
-            var lblMail = new Label
+            _lblProfileMail = new Label
             {
-                Text = "admin@rentcar.com",
+                Text = $"{SesionActual.Rol} · {u.Email}",
                 Font = new Font("Segoe UI", 8F),
                 ForeColor = _textMuted,
                 Location = new Point(60, 34),
                 AutoSize = true
             };
 
+            var btnCerrarSesion = new Guna2Button
+            {
+                Text = "Cerrar sesión",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(203, 213, 225),
+                FillColor = Color.FromArgb(51, 65, 85),
+                BorderRadius = 8,
+                BorderThickness = 0,
+                Height = 34,
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            };
+            btnCerrarSesion.HoverState.FillColor = Color.FromArgb(71, 85, 105);
+            btnCerrarSesion.Click += (_, _) => CerrarSesion();
+
             pnlProfile.Controls.Add(avatar);
-            pnlProfile.Controls.Add(lblUser);
-            pnlProfile.Controls.Add(lblMail);
+            pnlProfile.Controls.Add(_lblProfileUser);
+            pnlProfile.Controls.Add(_lblProfileMail);
+            pnlProfile.Controls.Add(btnCerrarSesion);
+            void LayoutProfileFooter()
+            {
+                var w = Math.Max(120, pnlProfile.ClientSize.Width - 24);
+                btnCerrarSesion.Width = w;
+                btnCerrarSesion.Left = 12;
+                btnCerrarSesion.Top = Math.Max(58, pnlProfile.ClientSize.Height - btnCerrarSesion.Height - 10);
+            }
+
+            pnlProfile.Resize += (_, _) => LayoutProfileFooter();
+            pnlProfile.HandleCreated += (_, _) => LayoutProfileFooter();
 
             var sidebarLayout = new TableLayoutPanel
             {
@@ -194,7 +245,7 @@ namespace RentaVehiculo
             pnlHeader.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             sidebarLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+            sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 118F));
             sidebarLayout.Controls.Add(pnlHeader, 0, 0);
             sidebarLayout.Controls.Add(pnlNavHost, 0, 1);
             sidebarLayout.Controls.Add(pnlProfile, 0, 2);
@@ -231,7 +282,7 @@ namespace RentaVehiculo
             };
             var headerSub = new Label
             {
-                Text = "Bienvenido al sistema de gestión de renta de vehículos",
+                Text = $"Bienvenido, {SesionActual.Usuario!.Nombre} — rol: {SesionActual.Rol}",
                 Font = new Font("Segoe UI", 9.5F),
                 ForeColor = Color.FromArgb(100, 116, 139),
                 AutoSize = true
@@ -295,14 +346,25 @@ namespace RentaVehiculo
             quickGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 102F));
             quickGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 102F));
 
-            quickGrid.Controls.Add(CreateQuickCard("Nueva Renta", "Registrar una nueva renta de vehículo", Mdl2Char(0xE710),
-                () => Program.ServiceProvider.GetRequiredService<RentaForm>().ShowDialog(this)), 0, 0);
-            quickGrid.Controls.Add(CreateQuickCard("Registrar Cliente", "Añadir un nuevo cliente al sistema", Mdl2Char(0xE716),
-                () => Program.ServiceProvider.GetRequiredService<ClienteForm>().ShowDialog(this)), 1, 0);
-            quickGrid.Controls.Add(CreateQuickCard("Ver Disponibilidad", "Consultar vehículos disponibles", Mdl2Char(0xE7B3),
-                () => Program.ServiceProvider.GetRequiredService<VehiculoList>().Show()), 0, 1);
-            quickGrid.Controls.Add(CreateQuickCard("Estado de Mantenimiento", "Revisar mantenimientos programados", Mdl2Char(0xE713),
-                () => Program.ServiceProvider.GetRequiredService<MantenimientoList>().Show()), 1, 1);
+            var quickCards = new List<(string Titulo, string Desc, string Icono, Action Accion)>();
+            if (SesionActual.PuedeAcceder(ModuloApp.Rentas))
+                quickCards.Add(("Nueva Renta", "Registrar una nueva renta de vehículo", Mdl2Char(0xE710),
+                    () => Program.ServiceProvider.GetRequiredService<RentaForm>().ShowDialog(this)));
+            if (SesionActual.PuedeAcceder(ModuloApp.Clientes))
+                quickCards.Add(("Registrar Cliente", "Añadir un nuevo cliente al sistema", Mdl2Char(0xE716),
+                    () => Program.ServiceProvider.GetRequiredService<ClienteForm>().ShowDialog(this)));
+            if (SesionActual.PuedeAcceder(ModuloApp.Vehiculos))
+                quickCards.Add(("Ver Disponibilidad", "Consultar vehículos disponibles", Mdl2Char(0xE7B3),
+                    () => ShowSingletonModule(() => Program.ServiceProvider.GetRequiredService<VehiculoList>())));
+            if (SesionActual.PuedeAcceder(ModuloApp.Mantenimiento))
+                quickCards.Add(("Estado de Mantenimiento", "Revisar mantenimientos programados", Mdl2Char(0xE713),
+                    () => ShowSingletonModule(() => Program.ServiceProvider.GetRequiredService<MantenimientoList>())));
+
+            for (var i = 0; i < quickCards.Count; i++)
+            {
+                var q = quickCards[i];
+                quickGrid.Controls.Add(CreateQuickCard(q.Titulo, q.Desc, q.Icono, q.Accion), i % 2, i / 2);
+            }
 
             var quickWrap = new Panel
             {
@@ -573,49 +635,208 @@ namespace RentaVehiculo
             void forwardClick(object? s, EventArgs e) => NavButton_Click(btn, e);
             lblIcon.Click += forwardClick;
             lblText.Click += forwardClick;
-            btn.Click += NavButton_Click;
+            btn.Click += forwardClick;
             return btn;
         }
 
         private void NavButton_Click(object? sender, EventArgs e)
         {
-            var btn = sender as Guna2Button ?? (sender as Control)?.Parent as Guna2Button;
-            if (btn?.Tag is not int idx)
+            if (_navClickEnCurso)
                 return;
-            SetSelectedNav(idx);
-            OpenModule(idx);
+            _navClickEnCurso = true;
+            try
+            {
+                var btn = sender as Guna2Button ?? (sender as Control)?.Parent as Guna2Button;
+                if (btn?.Tag is not int idx)
+                    return;
+                if (idx == NavDashboard)
+                {
+                    MostrarDashboard();
+                    return;
+                }
+
+                SetSelectedNav(idx);
+                OpenModule(idx);
+            }
+            finally
+            {
+                _navClickEnCurso = false;
+            }
+        }
+
+        /// <summary>
+        /// Evita ventanas duplicadas si el usuario hace doble clic o varios clics seguidos en el menú o accesos rápidos.
+        /// </summary>
+        private void MostrarDashboard()
+        {
+            SetSelectedNav(NavDashboard);
+            OcultarModulosAbiertos();
+            _pnlMain?.BringToFront();
+            BringToFront();
+            Activate();
+            _ = RefreshDashboardAsync();
+        }
+
+        private void OcultarModulosAbiertos()
+        {
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f == this || f.IsDisposed)
+                    continue;
+                if (f.Owner == this)
+                    f.Hide();
+            }
+        }
+
+        private void CerrarSesion()
+        {
+            if (MessageBox.Show("¿Desea cerrar sesión?", "Cerrar sesión",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            SesionActual.Cerrar();
+            RequiereNuevoLogin = true;
+
+            foreach (Form f in Application.OpenForms.Cast<Form>().ToList())
+            {
+                if (f == this || f.IsDisposed)
+                    continue;
+                try
+                {
+                    f.Close();
+                }
+                catch
+                {
+                    // ignorar cierre de formularios ya destruidos
+                }
+            }
+
+            Close();
+        }
+
+        private void ShowSingletonModule<T>(Func<T> create) where T : Form
+        {
+            try
+            {
+                foreach (Form open in Application.OpenForms)
+                {
+                    if (open is not T existing || existing.IsDisposed)
+                        continue;
+                    if (existing.WindowState == FormWindowState.Minimized)
+                        existing.WindowState = FormWindowState.Normal;
+                    // No volver a llamar a Show en un formulario ya visible: evita estados inválidos y
+                    // conflictos con ShowDialog en la misma bomba de mensajes.
+                    if (existing.Visible)
+                    {
+                        existing.BringToFront();
+                        existing.Activate();
+                        return;
+                    }
+
+                    existing.Show(this);
+                    existing.BringToFront();
+                    existing.Activate();
+                    return;
+                }
+
+                var f = create();
+                f.FormClosed += (_, _) =>
+                {
+                    if (!TieneModuloVisible())
+                        SetSelectedNav(NavDashboard);
+                };
+                f.Show(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ShowSingletonModule: {ex}");
+            }
+        }
+
+        private bool TieneModuloVisible()
+        {
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f == this || f.IsDisposed || f.Owner != this)
+                    continue;
+                if (f.Visible)
+                    return true;
+            }
+
+            return false;
         }
 
         private void OpenModule(int index)
         {
+            if (_abriendoModulo)
+                return;
+            if (!Enum.IsDefined(typeof(ModuloApp), index))
+                return;
+
+            var modulo = (ModuloApp)index;
+            if (!SesionActual.PuedeAcceder(modulo))
+            {
+                MessageBox.Show("Su rol no tiene permiso para abrir este módulo.", "Acceso denegado",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _abriendoModulo = true;
             try
             {
+                SetSelectedNav(index);
                 var sp = Program.ServiceProvider;
-                Form formToShow = index switch
+                switch (modulo)
                 {
-                    0 => sp.GetRequiredService<VehiculoList>(),
-                    1 => sp.GetRequiredService<ClienteList>(),
-                    2 => sp.GetRequiredService<ReservaList>(),
-                    3 => sp.GetRequiredService<RentaList>(),
-                    4 => sp.GetRequiredService<MantenimientoList>(),
-                    5 => sp.GetRequiredService<FacturaList>(),
-                    _ => throw new ArgumentOutOfRangeException(nameof(index))
-                };
-                formToShow.Show();
+                    case ModuloApp.Vehiculos:
+                        ShowSingletonModule(() => sp.GetRequiredService<VehiculoList>());
+                        break;
+                    case ModuloApp.Clientes:
+                        ShowSingletonModule(() => sp.GetRequiredService<ClienteList>());
+                        break;
+                    case ModuloApp.Reservas:
+                        ShowSingletonModule(() => sp.GetRequiredService<ReservaList>());
+                        break;
+                    case ModuloApp.Rentas:
+                        ShowSingletonModule(() => sp.GetRequiredService<RentaList>());
+                        break;
+                    case ModuloApp.Mantenimiento:
+                        ShowSingletonModule(() => sp.GetRequiredService<MantenimientoList>());
+                        break;
+                    case ModuloApp.Facturacion:
+                        ShowSingletonModule(() => sp.GetRequiredService<FacturaList>());
+                        break;
+                    case ModuloApp.Usuarios:
+                        ShowSingletonModule(() => sp.GetRequiredService<UsuarioList>());
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index));
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"No se pudo abrir el módulo: {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine($"OpenModule: {ex}");
+            }
+            finally
+            {
+                _abriendoModulo = false;
             }
         }
 
-        private void SetSelectedNav(int index)
+        private static string ObtenerIniciales(string nombre, string apellido)
+        {
+            var a = string.IsNullOrWhiteSpace(nombre) ? "" : nombre.Trim()[0].ToString().ToUpperInvariant();
+            var b = string.IsNullOrWhiteSpace(apellido) ? "" : apellido.Trim()[0].ToString().ToUpperInvariant();
+            var t = a + b;
+            return string.IsNullOrEmpty(t) ? "?" : t;
+        }
+
+        private void SetSelectedNav(int moduloIndex)
         {
             for (var i = 0; i < _navButtons.Count; i++)
             {
-                var sel = i == index;
                 var b = _navButtons[i];
+                var sel = b.Tag is int idx && idx == moduloIndex;
                 b.FillColor = sel ? _accentBlue : Color.Transparent;
                 b.ForeColor = Color.White;
                 b.HoverState.FillColor = sel ? _accentBlue : Color.FromArgb(51, 65, 85);

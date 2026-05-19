@@ -23,6 +23,14 @@ public class MantenimientoService(RentaVehiculosContext context) : IService<Mant
     public async Task<List<Mantenimiento>> GetList(Expression<Func<Mantenimiento, bool>> criterio) =>
         await context.Mantenimientos.AsNoTracking().Where(criterio).ToListAsync();
 
+    /// <summary>Incluye vehículo para mostrar nombre en listados.</summary>
+    public async Task<List<Mantenimiento>> GetListConRelacionesAsync(Expression<Func<Mantenimiento, bool>> criterio, CancellationToken ct = default) =>
+        await context.Mantenimientos.AsNoTracking()
+            .Include(m => m.IdVehiculoNavigation)
+            .Where(criterio)
+            .OrderByDescending(m => m.Id)
+            .ToListAsync(ct);
+
     public async Task<bool> Insertar(Mantenimiento entity)
     {
         context.Mantenimientos.Add(entity);

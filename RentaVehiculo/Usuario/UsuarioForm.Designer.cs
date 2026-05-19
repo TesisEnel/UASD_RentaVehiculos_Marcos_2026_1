@@ -18,8 +18,8 @@
             txtUsuario = new TextBox();
             txtEmail = new TextBox();
             txtPassword = new TextBox();
-            txtRol = new TextBox();
-            numSucursal = new NumericUpDown();
+            cboRol = new ComboBox();
+            cboSucursal = new ComboBox();
             chkActivo = new CheckBox();
             btnGuardar = new Button();
             btnCancelar = new Button();
@@ -35,10 +35,12 @@
             txtPassword.Location = new Point(200, 184);
             txtPassword.Size = new Size(260, 23);
             txtPassword.PasswordChar = '•';
-            txtRol.Location = new Point(200, 224);
-            txtRol.Size = new Size(260, 23);
-            numSucursal.Location = new Point(200, 264);
-            numSucursal.Maximum = 1000000;
+            cboRol.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboRol.Location = new Point(200, 224);
+            cboRol.Size = new Size(260, 23);
+            cboSucursal.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboSucursal.Location = new Point(200, 262);
+            cboSucursal.Size = new Size(260, 23);
             chkActivo.Location = new Point(200, 304);
             chkActivo.Text = "Activo";
             btnGuardar.Location = new Point(200, 356);
@@ -58,8 +60,8 @@
                 new Label { Text = "Email:", Location = new Point(20, 147), AutoSize = true },
                 new Label { Text = "Contraseña:", Location = new Point(20, 187), AutoSize = true },
                 new Label { Text = "Rol:", Location = new Point(20, 227), AutoSize = true },
-                new Label { Text = "Id sucursal (opc.):", Location = new Point(20, 267), AutoSize = true },
-                txtNombre, txtApellido, txtUsuario, txtEmail, txtPassword, txtRol, numSucursal, chkActivo, btnGuardar, btnCancelar });
+                new Label { Text = "Sucursal (opc.):", Location = new Point(20, 267), AutoSize = true },
+                txtNombre, txtApellido, txtUsuario, txtEmail, txtPassword, cboRol, cboSucursal, chkActivo, btnGuardar, btnCancelar });
             AutoScroll = true;
             ClientSize = new Size(500, 420);
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -74,8 +76,8 @@
         private TextBox txtUsuario;
         private TextBox txtEmail;
         private TextBox txtPassword;
-        private TextBox txtRol;
-        private NumericUpDown numSucursal;
+        private ComboBox cboRol;
+        private ComboBox cboSucursal;
         private CheckBox chkActivo;
         private Button btnGuardar;
         private Button btnCancelar;
